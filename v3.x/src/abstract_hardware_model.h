@@ -268,7 +268,7 @@ protected:
 #define LOCAL_GENERIC_START (SHARED_GENERIC_START-TOTAL_LOCAL_MEM)
 #define STATIC_ALLOC_LIMIT (GLOBAL_HEAP_START - (TOTAL_LOCAL_MEM+TOTAL_SHARED_MEM))
 
-#if !defined(__CUDA_RUNTIME_API_H__)
+#if !defined(__CUDA_RUNTIME_API_H__)&&!defined(__CUDA_RUNTIME_H__)
 
 enum cudaChannelFormatKind {
    cudaChannelFormatKindSigned,
