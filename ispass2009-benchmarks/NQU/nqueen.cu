@@ -7,6 +7,9 @@
 //#include <windows.h>
 #include <stdio.h>
 #include <cutil.h>
+#include <iostream>
+
+using namespace std;
 
 #define THREAD_NUM		96
 
@@ -478,6 +481,7 @@ long long solve_nqueen_cuda(int n, int steps)
 							cudaMemcpy(l_masks_cuda, total_l_masks, sizeof(int) * total_conditions, cudaMemcpyHostToDevice);
 							cudaMemcpy(r_masks_cuda, total_r_masks, sizeof(int) * total_conditions, cudaMemcpyHostToDevice);
 
+							printf("%d %d\n",steps/THREAD_NUM,THREAD_NUM);
 							solve_nqueen_cuda_kernel<<<steps/THREAD_NUM, THREAD_NUM>>>(n, n - mark, masks_cuda, l_masks_cuda, r_masks_cuda, results_cuda, total_conditions);
 
 							computed = true;
@@ -509,6 +513,7 @@ long long solve_nqueen_cuda(int n, int steps)
 	cudaMemcpy(l_masks_cuda, total_l_masks, sizeof(int) * total_conditions, cudaMemcpyHostToDevice);
 	cudaMemcpy(r_masks_cuda, total_r_masks, sizeof(int) * total_conditions, cudaMemcpyHostToDevice);
 
+	printf("%d %d\n",steps/THREAD_NUM,THREAD_NUM);
 	solve_nqueen_cuda_kernel<<<steps/THREAD_NUM, THREAD_NUM>>>(n, n - mark, masks_cuda, l_masks_cuda, r_masks_cuda, results_cuda, total_conditions);
 
 	cudaMemcpy(results, results_cuda, sizeof(int) * steps / THREAD_NUM, cudaMemcpyDeviceToHost);
@@ -565,7 +570,8 @@ long long solve_nqueen_cuda(int n, int steps)
 							cudaMemcpy(masks_cuda, total_masks, sizeof(int) * total_conditions, cudaMemcpyHostToDevice);
 							cudaMemcpy(l_masks_cuda, total_l_masks, sizeof(int) * total_conditions, cudaMemcpyHostToDevice);
 							cudaMemcpy(r_masks_cuda, total_r_masks, sizeof(int) * total_conditions, cudaMemcpyHostToDevice);
-
+								
+							printf("%d %d\n",steps/THREAD_NUM,THREAD_NUM);
 							solve_nqueen_cuda_kernel<<<steps/THREAD_NUM, THREAD_NUM>>>(n, n - mark, masks_cuda, l_masks_cuda, r_masks_cuda, results_cuda, total_conditions);
 
 							computed = true;
@@ -595,6 +601,7 @@ long long solve_nqueen_cuda(int n, int steps)
 		cudaMemcpy(l_masks_cuda, total_l_masks, sizeof(int) * total_conditions, cudaMemcpyHostToDevice);
 		cudaMemcpy(r_masks_cuda, total_r_masks, sizeof(int) * total_conditions, cudaMemcpyHostToDevice);
 
+		printf("%d %d\n",steps/THREAD_NUM,THREAD_NUM);
 		solve_nqueen_cuda_kernel<<<steps/THREAD_NUM, THREAD_NUM>>>(n, n - mark, masks_cuda, l_masks_cuda, r_masks_cuda, results_cuda, total_conditions);
 
 		cudaMemcpy(results, results_cuda, sizeof(int) * steps / THREAD_NUM, cudaMemcpyDeviceToHost);
@@ -677,7 +684,7 @@ int main(int argc, char** argv)
       CUDA_SAFE_CALL(cudaSetDevice(dev));  
   CUT_SAFE_CALL( cutCreateTimer(&hTimer) );
 
-	int n = 8;
+	int n = 11;//11;
 	clock_t start, end;
 	long long solution;
 	bool cpu = true, gpu = true;

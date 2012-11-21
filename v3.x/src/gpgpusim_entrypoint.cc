@@ -27,6 +27,7 @@
 
 #include "gpgpusim_entrypoint.h"
 #include <stdio.h>
+#include <fstream>
 
 #include "option_parser.h"
 #include "cuda-sim/cuda-sim.h"
@@ -40,6 +41,8 @@
 #include <semaphore.h>
 
 #define MAX(a,b) (((a)>(b))?(a):(b))
+
+using namespace std;
 
 static int sg_argc = 3;
 static const char *sg_argv[] = {"", "-config","gpgpusim.config"};
@@ -55,6 +58,13 @@ pthread_t g_simulation_thread;
 gpgpu_sim_config g_the_gpu_config;
 gpgpu_sim *g_the_gpu;
 stream_manager *g_stream_manager;
+
+//experiment
+extern unsigned long long expected_sim_cycle;
+extern unsigned long long last_inst_count; 
+extern unsigned long long valid_sim_cycle;
+void exit_simulation();
+
 
 static void print_simulation_time();
 
@@ -72,6 +82,14 @@ void *gpgpu_sim_thread_sequential(void*)
               g_the_gpu->cycle();
               g_the_gpu->deadlock_check();
           }
+          //experiment
+          //output the results if the program naturally terminate
+          ofstream fout;
+          fout.open("sim_out.txt");
+          fout<<valid_sim_cycle<<endl<<g_the_gpu->gpu_sim_insn;
+          fout.close();
+          exit(0);
+
           g_the_gpu->print_stats();
           g_the_gpu->update_stats();
           print_simulation_time();
@@ -114,6 +132,12 @@ void *gpgpu_sim_thread_concurrent(void*)
             if( grid_uid ){
                 g_stream_manager->register_finished_kernel(grid_uid);
 				g_the_gpu->print_stats();
+        //experiment
+        //output the results if the program naturally terminate
+        ofstream fout;
+        fout.open("sim_out.txt");
+        fout<<valid_sim_cycle<<endl<<-1<<endl;//g_the_gpu->gpu_tot_sim_insn<<endl;
+        fout.close();
             }
 
 			// launch operation on device if one is pending and can be run
@@ -128,6 +152,8 @@ void *gpgpu_sim_thread_concurrent(void*)
             }
             active = g_the_gpu->active() || !g_stream_manager->empty();
         } while( active );
+
+
         if(g_debug_execution >= 3) {
            printf("GPGPU-Sim: ** STOP simulation thread (no work) **\n");
            fflush(stdout);
@@ -138,7 +164,10 @@ void *gpgpu_sim_thread_concurrent(void*)
         pthread_mutex_lock(&g_sim_lock);
         g_sim_active = false;
         pthread_mutex_unlock(&g_sim_lock);
+
     } while( !g_sim_done );
+    
+
     if(g_debug_execution >= 3) {
        printf("GPGPU-Sim: *** simulation thread exiting ***\n");
        fflush(stdout);
@@ -172,6 +201,7 @@ void exit_simulation()
     sem_wait(&g_sim_signal_exit);
     printf("GPGPU-Sim: simulation thread signaled exit\n");
     fflush(stdout);
+
 }
 
 extern bool g_cuda_launch_blocking;

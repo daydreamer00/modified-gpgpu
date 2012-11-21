@@ -73,11 +73,17 @@ bool g_interactive_debugger_enabled=false;
 unsigned long long  gpu_sim_cycle = 0;
 unsigned long long  gpu_tot_sim_cycle = 0;
 
+//experiment
 unsigned long long mig_cycle_marks[MAX_MEM_PART][100];
 unsigned int num_marks[MAX_MEM_PART];
 unsigned int mig_mark_index[MAX_MEM_PART];
 bool mig_flag[MAX_MEM_PART];
 bool mpu_rest[MAX_MEM_PART];
+unsigned long long expected_sim_cycle =0;
+unsigned long long last_inst_count = 0; 
+unsigned long long valid_sim_cycle = 0;
+bool isValidSimulating = false;
+
 
 // performance counter for stalls due to congestion.
 unsigned int gpu_stall_dramfull = 0; 
@@ -456,6 +462,7 @@ gpgpu_sim::gpgpu_sim( const gpgpu_sim_config &config )
 
 
 	//experiment
+    //L2 control initialization
 
 	memset(mig_cycle_marks,-1,sizeof(mig_cycle_marks));
 	ifstream mig_marks_ifstr;
@@ -470,6 +477,12 @@ gpgpu_sim::gpgpu_sim( const gpgpu_sim_config &config )
 	memset(mig_flag,0,sizeof(mig_flag));
 	memset(mig_mark_index,0,sizeof(mig_mark_index));
 	memset(mpu_rest,0,sizeof(mpu_rest));
+    //experiment
+    //read the num_cycle and inst_ct
+    ifstream config_file;
+    config_file.open("sim_config.txt");
+    config_file>>expected_sim_cycle>>last_inst_count;
+    config_file.close();
 }
 
 int gpgpu_sim::shared_mem_size() const
@@ -915,12 +928,30 @@ void gpgpu_sim::cycle()
 		for (unsigned i=0;i<m_shader_config->n_simt_clusters;i++) {
 			if (m_cluster[i]->get_not_completed() || get_more_cta_left() ) {
 				m_cluster[i]->core_cycle();
+                //experiment
+                //check inst_count
+                if (!isValidSimulating && gpu_sim_insn>=last_inst_count){
+                    isValidSimulating=true;
+                }
 			}
 		}
 		if( g_single_step && ((gpu_sim_cycle+gpu_tot_sim_cycle) >= g_single_step) ) {
 			asm("int $03");
 		}
 		gpu_sim_cycle++;
+        //experiment
+        //increase valid_sim_cycle and check
+        if(isValidSimulating) valid_sim_cycle++;
+        //cout<<expected_sim_cycle<<endl;
+        //cout<<valid_sim_cycle<<endl;
+        if (valid_sim_cycle==expected_sim_cycle) {
+            ofstream fout;
+            fout.open("sim_out.txt");
+            fout<<valid_sim_cycle<<endl<<gpu_sim_insn;
+            fout.close();
+            exit(0);
+        }
+
 		if( g_interactive_debugger_enabled ) 
 		  gpgpu_debug();
 
